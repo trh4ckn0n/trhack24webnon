@@ -1,56 +1,27 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Recherche de vols</title>
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <meta charset="UTF-8">
+  <title>FlightRadar Tracker Web</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
-  <h1>Recherche de vols par pays / destination</h1>
-  <form id="searchForm">
-    <label>Départ : <input type="text" name="depart" required /></label><br/>
-    <label>Arrivée : <input type="text" name="arrivee" required /></label><br/>
-    <button type="submit">Lancer la recherche</button>
-  </form>
+  <h1>FlightRadar24 Interactive Tracker</h1>
 
-  <div id="progress"></div>
-  <div id="result"></div>
+  <div class="controls">
+    <input type="text" id="flight-id" placeholder="Vol ID ou Callsign">
+    <button onclick="startTrackById()">Suivre le vol</button>
+    <hr>
+    <select id="country"></select>
+    <select id="airport"></select>
+    <select id="flight"></select>
+    <button onclick="trackFromAirport()">Suivre sélection</button>
+  </div>
 
-  <script>
-    const socket = io();
-
-    const form = document.getElementById('searchForm');
-    const progressDiv = document.getElementById('progress');
-    const resultDiv = document.getElementById('result');
-
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      progressDiv.innerHTML = '';
-      resultDiv.innerHTML = '';
-      const data = {
-        depart: form.depart.value.trim(),
-        arrivee: form.arrivee.value.trim()
-      };
-      socket.emit('start_search', data);
-    });
-
-    socket.on('started', data => {
-      progressDiv.innerHTML = data.msg;
-    });
-
-    socket.on('progress', data => {
-      progressDiv.innerHTML = data.msg;
-    });
-
-    socket.on('result', data => {
-      let html = '<h2>Résultats :</h2><ul>';
-      data.vols.forEach(vol => {
-        html += `<li>${vol.vol} : ${vol.depart} → ${vol.arrivee} | Prix : ${vol.prix}</li>`;
-      });
-      html += '</ul>';
-      resultDiv.innerHTML = html;
-    });
-  </script>
+  <div id="map"></div>
+  <script src="https://cdn.socket.io/4/socket.io.min.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="/static/script.js"></script>
 </body>
 </html>
