@@ -1,37 +1,56 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8" />
-    <title>Exemple Flask-SocketIO</title>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
+  <meta charset="UTF-8" />
+  <title>Recherche de vols</title>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
 </head>
 <body>
-    <h1>Test Flask-SocketIO Thread Safe</h1>
-    <button id="start">Démarrer tâche</button>
-    <div id="log"></div>
+  <h1>Recherche de vols par pays / destination</h1>
+  <form id="searchForm">
+    <label>Départ : <input type="text" name="depart" required /></label><br/>
+    <label>Arrivée : <input type="text" name="arrivee" required /></label><br/>
+    <button type="submit">Lancer la recherche</button>
+  </form>
 
-    <script>
-        const socket = io();
+  <div id="progress"></div>
+  <div id="result"></div>
 
-        socket.on('connect', () => {
-            console.log('Connecté au serveur');
-        });
+  <script>
+    const socket = io();
 
-        socket.on('progress', (data) => {
-            document.getElementById('log').innerHTML += `<p>Progression: ${data.count}</p>`;
-        });
+    const form = document.getElementById('searchForm');
+    const progressDiv = document.getElementById('progress');
+    const resultDiv = document.getElementById('result');
 
-        socket.on('done', (data) => {
-            document.getElementById('log').innerHTML += `<p style="color:green">${data.message}</p>`;
-        });
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      progressDiv.innerHTML = '';
+      resultDiv.innerHTML = '';
+      const data = {
+        depart: form.depart.value.trim(),
+        arrivee: form.arrivee.value.trim()
+      };
+      socket.emit('start_search', data);
+    });
 
-        socket.on('error', (data) => {
-            document.getElementById('log').innerHTML += `<p style="color:red">Erreur: ${data.message}</p>`;
-        });
+    socket.on('started', data => {
+      progressDiv.innerHTML = data.msg;
+    });
 
-        document.getElementById('start').onclick = () => {
-            socket.emit('start_task', {foo: 'bar'});
-        };
-    </script>
+    socket.on('progress', data => {
+      progressDiv.innerHTML = data.msg;
+    });
+
+    socket.on('result', data => {
+      let html = '<h2>Résultats :</h2><ul>';
+      data.vols.forEach(vol => {
+        html += `<li>${vol.vol} : ${vol.depart} → ${vol.arrivee} | Prix : ${vol.prix}</li>`;
+      });
+      html += '</ul>';
+      resultDiv.innerHTML = html;
+    });
+  </script>
 </body>
 </html>
