@@ -6,8 +6,7 @@ import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
-
+socketio = SocketIO(app, async_mode='threading', cors_allowed_origins="*")
 def recherche_vols(params, sid):
     # Simule une recherche avec progression
     for i in range(1, 6):
