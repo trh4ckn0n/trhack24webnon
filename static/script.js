@@ -1,31 +1,55 @@
-
 const socket = io();
-let map = L.map('map').setView([48.8566, 2.3522], 5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18
-}).addTo(map);
+let map = L.map('map').setView([46, 2], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let marker, trail;
 
-let marker, trailLine;
-
-function trackFlight() {
-    const flight_id = document.getElementById('flightInput').value.trim();
-    if (!flight_id) return alert("❌ Entrer un callsign ou numéro de vol.");
-    socket.emit('track_flight', { flight_id });
+async function init() {
+  const countries = await fetch('/countries').then(r => r.json());
+  const sel = document.getElementById('country');
+  sel.innerHTML = countries.map(c => `<option>${c}</option>`).join('');
+  sel.onchange = () => loadAirports(sel.value);
+  loadAirports(countries[0]);
 }
 
-socket.on('update', data => {
-    const { lat, lng, trail, altitude, speed, callsign } = data;
-    if (marker) map.removeLayer(marker);
-    if (trailLine) map.removeLayer(trailLine);
+async function loadAirports(country) {
+  const aps = await fetch('/airports', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({country})}).then(r => r.json());
+  const sel = document.getElementById('airport');
+  sel.innerHTML = aps.map(a => `<option value="${a.icao}">${a.icao} – ${a.name}</option>`).join('');
+  sel.onchange = () => loadFlights(sel.value);
+  loadFlights(aps[0]?.icao);
+}
 
-    marker = L.marker([lat, lng]).addTo(map).bindPopup(`${callsign}<br>Alt: ${altitude} ft<br>Vit: ${speed} kt`).openPopup();
+async function loadFlights(icao) {
+  const fls = await fetch('/flights', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({icao})}).then(r => r.json());
+  document.getElementById('flight').innerHTML = fls.map(f => `<option value="${f.id}">${f.callsign} (${f.origin} → ${f.destination})</option>`).join('');
+}
 
-    const trailLatLngs = trail.map(p => [p.lat, p.lng]);
-    trailLine = L.polyline(trailLatLngs, { color: 'lime', weight: 3 }).addTo(map);
+function startTrackById() {
+  const id = document.getElementById('flight-id').value.trim();
+  if (!id) return alert('Entrer ID ou Callsign');
+  track(id);
+}
 
-    map.setView([lat, lng], 6);
+function trackFromAirport() {
+  const id = document.getElementById('flight').value;
+  if (!id) return alert('Choisir un vol');
+  track(id);
+}
+
+function track(id) {
+  socket.emit('track', {flight_id: id});
+  if (marker) map.removeLayer(marker);
+  if (trail) map.removeLayer(trail);
+}
+
+socket.on('position', data => {
+  const {lat, lng, alt, spd} = data;
+  if (marker) map.removeLayer(marker);
+  if (trail) map.removeLayer(trail);
+  marker = L.marker([lat, lng]).addTo(map)
+     .bindPopup(`Alt: ${alt} ft, Speed: ${spd} kt`).openPopup();
+  socket.emit('track', {flight_id: document.getElementById('flight-id').value});
 });
+socket.on('error', e => alert(e.msg));
 
-socket.on('error', data => {
-    alert("Erreur: " + data.message);
-});
+init();
