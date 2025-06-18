@@ -6,7 +6,7 @@ import threading
 import time
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='threading')
 fr = FlightRadar24API()
 
 @app.route('/')
