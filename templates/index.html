@@ -1,19 +1,37 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Flight Tracker</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <meta charset="UTF-8" />
+    <title>Exemple Flask-SocketIO</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
 </head>
 <body>
-    <h1>✈️ Suivi de vol interactif - trhacknon</h1>
-    <input type="text" id="flightInput" placeholder="Ex: AFR123, LH456...">
-    <button onclick="trackFlight()">🔍 Suivre</button>
-    <div id="map"></div>
-    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="/static/script.js"></script>
+    <h1>Test Flask-SocketIO Thread Safe</h1>
+    <button id="start">Démarrer tâche</button>
+    <div id="log"></div>
+
+    <script>
+        const socket = io();
+
+        socket.on('connect', () => {
+            console.log('Connecté au serveur');
+        });
+
+        socket.on('progress', (data) => {
+            document.getElementById('log').innerHTML += `<p>Progression: ${data.count}</p>`;
+        });
+
+        socket.on('done', (data) => {
+            document.getElementById('log').innerHTML += `<p style="color:green">${data.message}</p>`;
+        });
+
+        socket.on('error', (data) => {
+            document.getElementById('log').innerHTML += `<p style="color:red">Erreur: ${data.message}</p>`;
+        });
+
+        document.getElementById('start').onclick = () => {
+            socket.emit('start_task', {foo: 'bar'});
+        };
+    </script>
 </body>
 </html>
